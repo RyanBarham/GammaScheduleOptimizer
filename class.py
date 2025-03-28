@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import random as rd
+import matplotlib.pyplot as plt
 from time import time
 
 # Start time
@@ -29,8 +30,6 @@ class Schedule:
         self.space_conflicts = 0
         self.acts_in_wrong_space = []
 
-#TODO: Fix your class getter and setter stuff
-
     @property
     def acts(self):
         return self._acts
@@ -54,7 +53,6 @@ class Schedule:
     def spaces(self):
         return self._spaces
 
-    # For now, I will just be using a number of spaces, however I would like to implement where the acts are supposed to go.
     @spaces.setter
     def spaces(self, spaces):
         if spaces == spaces_list:
@@ -75,20 +73,63 @@ class Schedule:
         self.matrix = pd.DataFrame(self.matrix, index=['Hour1', 'Hour2', 'Hour3', 'Hour4'], columns=self.spaces)
         return self
 
+    # Fill acts function for restricted spaces model
+    def fill_acts_correctly(self):
+        if len(self.acts) < self.size:
+            empty_slots = self.size - len(self.acts)
+            while empty_slots > 0:
+                empty_act = 'None'
+                self.acts = np.append(self.acts, empty_act)
+                empty_slots -= 1
+        rf_acts = []
+        wf_acts = []
+        al_acts = []
+        cl_acts = []
+        oth_acts = []
+        for key, value in available_spaces_restricted.items():
+            if value == ['Red Floor']:
+                rf_acts.append(key)
+            elif value == ['Wood Floor']:
+                wf_acts.append(key)
+            elif value == ['Aerial Land']:
+                al_acts.append(key)
+            elif value == ['Classroom']:
+                cl_acts.append(key)
+            elif value == ['Other']:
+                oth_acts.append(key)
+            else:
+                executed = False
+                if not executed:
+                    wf_acts.append('None')
+                    al_acts.append('None')
+                    cl_acts.append('None')
+                    executed = True
+        rd.shuffle(rf_acts)
+        rd.shuffle(wf_acts)
+        rd.shuffle(al_acts)
+        rd.shuffle(cl_acts)
+        rd.shuffle(oth_acts)
+        rf_df = pd.DataFrame(rf_acts)
+        wf_df = pd.DataFrame(wf_acts)
+        al_df = pd.DataFrame(al_acts)
+        cl_df = pd.DataFrame(cl_acts)
+        oth_df = pd.DataFrame(oth_acts)
+        self.matrix = pd.concat([rf_df, wf_df, al_df, cl_df, oth_df], axis=1)
+        return self
+
     # Separate the schedule into its separate hours and then get the conflict scores for each hour
     def fitness(self):
+        self.act_conflicts = 0
+        self.space_conflicts = 0
         hour1 = self.matrix.iloc[0]
         hour2 = self.matrix.iloc[1]
         hour3 = self.matrix.iloc[2]
         hour4 = self.matrix.iloc[3]
 
-        self.evaluate_hour(hour1).check_spaces(hour1)
-        self.evaluate_hour(hour2).check_spaces(hour2)
-        self.evaluate_hour(hour3).check_spaces(hour3)
-        self.evaluate_hour(hour4).check_spaces(hour4)
-        print(self.matrix)
-        print(self.act_conflicts)
-        print(self.space_conflicts)
+        self.evaluate_hour(hour1).check_spaces(hour1, 0)
+        self.evaluate_hour(hour2).check_spaces(hour2, 1)
+        self.evaluate_hour(hour3).check_spaces(hour3, 2)
+        self.evaluate_hour(hour4).check_spaces(hour4, 3)
         return self
 
     # Evaluates an hour to determine its conflict score, takes total entries in isolated matrix - rows in isolated matrix and adds that value to the conflict score
@@ -104,14 +145,14 @@ class Schedule:
         return self
 
     # Function checking to see if all the acts are in the correct spaces and adds to the conflict score if they are not.
-    def check_spaces(self, hour):
+    def check_spaces(self, hour, hour_index):
         column_index = 0
-        for i in range(len(self.spaces)):
+        for i in range(len(self.spaces)-1):
             act = hour.iloc[column_index]
-            if self.spaces[i] not in available_spaces[act]:
+            if self.spaces[i] not in available_spaces_restricted[act]:
                 self.space_conflicts += 5
                 column_index += 1
-                self.acts_in_wrong_space.append(act)
+                self.acts_in_wrong_space.append([column_index, hour_index])
             else:
                 column_index += 1
         return self
@@ -131,13 +172,18 @@ class Schedule:
 
     # Different mutation function that only selects acts in the wrong spaces to swap with each other
     def mutate2(self):
-        random_act1, random_act2 = rd.sample(self.acts_in_wrong_space,2)
-        ...
-
-    # Remember that calling this method converts our schedule into a string, so we only print the matrix properly once we are completely done with the program
-    def __str__(self):
-        ...
-        # use pandas .to_string()
+        if len(self.acts_in_wrong_space) >= 2:
+            self.act_conflicts = 0
+            self.space_conflicts = 0
+            column_index1, row_index1 = self.acts_in_wrong_space[0]
+            column_index2, row_index2 = self.acts_in_wrong_space[1]
+            act1 = self.matrix.iat[row_index1, column_index1]
+            act2 = self.matrix.iat[row_index2, column_index2]
+            temp_variable = act1
+            self.matrix.iat[row_index1, column_index1] = act2
+            self.matrix.iat[row_index2, column_index2] = temp_variable
+            del self.acts_in_wrong_space[0:2]
+            return self
 
 # List of available spaces to practice and dictionary for what spaces each act can practice in
 spaces_list = ['Red Floor', 'Wood Floor', 'Aerial Land', 'Classroom', 'Other']
@@ -161,15 +207,23 @@ available_spaces = {
             'Wall Trampoline': ['Other'],
             'None': ['Red Floor', 'Wood Floor', 'Aerial Land', 'Classroom', 'Other']
         }
-sched = Schedule(df.columns, spaces_list, 4)
-sched = sched.fill_acts()
-sched = sched.fitness()
-sched = sched.mutate()
-sched = sched.fitness()
-
-
-
-# End time
-end_time = time()
-elapsed_time = end_time - start_time
-print(f'Elapsed time: {elapsed_time:.4f} seconds')
+available_spaces_restricted = {
+            'Acro': ['Red Floor'],
+            'Aerial Pole': ['Aerial Land'],
+            'Bike': ['Other'],
+            'Clowns': ['Classroom'],
+            'Aerial Chain': ['Aerial Land'],
+            'Dance': ['Other'],
+            'German Wheel': ['Wood Floor'],
+            'Highwire': ['Wood Floor'],
+            'Juggling': ['Wood Floor'],
+            'Perch': ['Classroom'],
+            'Russian Swing': ['Red Floor'],
+            'Double Lyra': ['Aerial Land'],
+            'Stoinev Atayde': ['Classroom'],
+            'Teeterboard/Bar': ['Red Floor'],
+            'Tumbling': ['Red Floor'],
+            'Unicycles': ['Other'],
+            'Wall Trampoline': ['Other'],
+            'None': ['Wood Floor', 'Aerial Land', 'Classroom']
+}

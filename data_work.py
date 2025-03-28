@@ -36,9 +36,9 @@ unis = df[df["Unicycles"] != 0]
 wall = df[df["Wall Trampoline"] != 0]
 
 
-hour1 = pd.merge(teeter, wheel, how='outer').merge(wire, how='outer').merge(wall, how='outer')
-hour1 = hour1.drop(columns=['Perch', 'Russian Swing', 'Aerial Pole', 'Bike', 'Acro', 'Dance', 'Aerial Chain', 'Juggling',
-                         'Double Lyra', 'Stoinev Atayde', 'Clowns', 'Tumbling', 'Unicycles'])
+hour1 = pd.merge(tumbling, juggling, how='outer').merge(chains, how='outer')
+hour1 = hour1.drop(columns=['Perch', 'Acro', 'Aerial Pole', 'Bike', 'Teeterboard/Bar', 'Dance', 'Highwire',
+                         'Double Lyra', 'Stoinev Atayde', 'Clowns', 'Russian Swing', 'Unicycles', 'Wall Trampoline', 'German Wheel'])
 print(hour1)
 
 pole_conflicts = {
@@ -61,6 +61,49 @@ pole_conflicts = {
     "wall": sum(perch["Wall Trampoline"]),
 }
 #print(pole_conflicts)
+
+# List of available spaces to practice and dictionary for what spaces each act can practice in
+spaces_list = ['Red Floor', 'Wood Floor', 'Aerial Land', 'Classroom', 'Other']
+available_spaces = {
+            'Acro': ['Red Floor', 'Wood Floor'],
+            'Aerial Pole': ['Aerial Land'],
+            'Bike': ['Wood Floor', 'Other'],
+            'Clowns': ['Classroom'],
+            'Aerial Chain': ['Aerial Land'],
+            'Dance': ['Red Floor', 'Wood Floor', 'Other'],
+            'German Wheel': ['Wood Floor'],
+            'Highwire': ['Wood Floor'],
+            'Juggling': ['Red Floor', 'Wood Floor'],
+            'Perch': ['Classroom'],
+            'Russian Swing': ['Red Floor'],
+            'Double Lyra': ['Aerial Land'],
+            'Stoinev Atayde': ['Classroom'],
+            'Teeterboard/Bar': ['Red Floor'],
+            'Tumbling': ['Red Floor', 'Wood Floor'],
+            'Unicycles': ['Wood Floor', 'Other'],
+            'Wall Trampoline': ['Other'],
+            'None': ['Red Floor', 'Wood Floor', 'Aerial Land', 'Classroom', 'Other']
+        }
+available_spaces_restricted = {
+            'Acro': ['Red Floor'],
+            'Aerial Pole': ['Aerial Land'],
+            'Bike': ['Other'],
+            'Clowns': ['Classroom'],
+            'Aerial Chain': ['Aerial Land'],
+            'Dance': ['Other'],
+            'German Wheel': ['Wood Floor'],
+            'Highwire': ['Wood Floor'],
+            'Juggling': ['Wood Floor'],
+            'Perch': ['Classroom'],
+            'Russian Swing': ['Red Floor'],
+            'Double Lyra': ['Aerial Land'],
+            'Stoinev Atayde': ['Classroom'],
+            'Teeterboard/Bar': ['Red Floor'],
+            'Tumbling': ['Red Floor'],
+            'Unicycles': ['Other'],
+            'Wall Trampoline': ['Other'],
+            'None': ['Wood Floor', 'Aerial Land', 'Classroom']
+}
 
 # End time
 end_time = time()
