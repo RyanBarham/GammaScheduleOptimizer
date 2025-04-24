@@ -3,7 +3,9 @@ import pandas as pd
 import random as rd
 import matplotlib.pyplot as plt
 from time import time
+import copy
 import data_work
+
 
 # Start time
 start_time = time()
@@ -20,16 +22,18 @@ df = df.fillna(0)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
+schedule_size = 20
+
 class Schedule:
     def __init__(self, acts, spaces, hours):
         self.acts = acts
         self.spaces = spaces
         self.hours = hours
-        self.size = len(self.spaces) * self.hours
-        self.matrix = pd.DataFrame(index=['H1', 'H2', 'H3', 'H4'], columns=self.spaces)
+        self.matrix = pd.DataFrame(index=['H1', 'H2', 'H3', 'H4'], columns=data_work.spaces_list)
         self.act_conflicts = 0
         self.space_conflicts = 0
         self.acts_in_wrong_space = []
+
 
     @property
     def acts(self):
@@ -45,10 +49,7 @@ class Schedule:
 
     @hours.setter
     def hours(self, hours):
-        if hours == 4:
-            self._hours = int(hours)
-        else:
-            raise ValueError('Must be 4 hours')
+        self._hours = hours
 
     @property
     def spaces(self):
@@ -56,15 +57,13 @@ class Schedule:
 
     @spaces.setter
     def spaces(self, spaces):
-        if spaces == data_work.spaces_list:
-            self._spaces = spaces
-        else:
-            raise ValueError('Must be list of eligible spaces')
+        self._spaces = spaces
 
     # Add more empty "acts" to the list to fully fill the matrix and generate random schedule
     def fill_acts(self):
-        if len(self.acts) < self.size:
-            empty_slots = self.size - len(self.acts)
+        act_size = len(self.acts)
+        if act_size < schedule_size:
+            empty_slots = schedule_size - len(self.acts)
             while empty_slots > 0:
                 empty_act = 'None'
                 self.acts = np.append(self.acts, empty_act)
@@ -76,8 +75,9 @@ class Schedule:
 
     # Fill acts function for restricted spaces model
     def fill_acts_correctly(self):
-        if len(self.acts) < self.size:
-            empty_slots = self.size - len(self.acts)
+        act_size = len(self.acts)
+        if act_size < schedule_size:
+            empty_slots = schedule_size - len(self.acts)
             while empty_slots > 0:
                 empty_act = 'None'
                 self.acts = np.append(self.acts, empty_act)
@@ -208,7 +208,10 @@ def create_generation():
         obj.fill_acts_correctly()
         obj.fitness()
     for i in range(len(hall_of_fame)):
-        generation.append(hall_of_fame[i])
+        copy_schedule = Schedule(df.columns, data_work.spaces_list, 4)
+        copy_schedule.matrix = hall_of_fame[i].matrix
+        copy_schedule.fitness()
+        generation.append(copy_schedule)
     for j in generation:
         data = j.act_conflicts
         raw_data.append(data)
@@ -223,18 +226,10 @@ def create_generation():
 def main():
     number_of_generations = 50
     create_generation()
-    for n in range(number_of_generations-1):
-        hall_of_fame_index.append(n+1)
     for i in range(number_of_generations-1):
         create_generation()
-        best_in_HOF = min(hall_of_fame, key=lambda obj: obj.act_conflicts)
-        hall_of_fame_best.append(best_in_HOF.act_conflicts)
-        for j in range(len(hall_of_fame)):
-            hall_of_fame[j] = mutation(hall_of_fame[j])
-            hall_of_fame[j].fitness()
-    for schedule in hall_of_fame:
-        schedule.fitness()
-    best_schedule = min(hall_of_fame, key=lambda obj: obj.act_conflicts)
+    best_schedule_index = hall_of_fame_scores.index(min(hall_of_fame_scores))
+    best_schedule = hall_of_fame[best_schedule_index]
     final_data = pd.DataFrame(raw_data)
     print(best_schedule.matrix)
     print(f'Act conflicts for best schedule: {best_schedule.act_conflicts}')
@@ -244,7 +239,7 @@ def main():
     print(f'Average: ', final_data.mean())
     print(f'Minimum value: ', final_data.min())
     print(f'Maximum value: ', final_data.max())
-    scatter_plot(hall_of_fame_index, hall_of_fame_best)
+    #scatter_plot(hall_of_fame_index, hall_of_fame_best)
 
 
 # Function to make a scatter plot from our data

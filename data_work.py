@@ -39,7 +39,7 @@ wall = df[df["Wall Trampoline"] != 0]
 hour1 = pd.merge(tumbling, juggling, how='outer').merge(chains, how='outer')
 hour1 = hour1.drop(columns=['Perch', 'Acro', 'Aerial Pole', 'Bike', 'Teeterboard/Bar', 'Dance', 'Highwire',
                          'Double Lyra', 'Stoinev Atayde', 'Clowns', 'Russian Swing', 'Unicycles', 'Wall Trampoline', 'German Wheel'])
-print(hour1)
+#print(hour1)
 
 pole_conflicts = {
     "pole": sum(perch["Aerial Pole"]),
